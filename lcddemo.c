@@ -49,7 +49,7 @@ main(int argc, char **argv)
 	lcd_fd = open(LCD_DEVICE, O_RDWR);
 
 	if (lcd_fd == -1) {
-		perror("Can not open /dev/lcd");
+		perror("Can not open " LCD_DEVICE);
 		exit(1);
 	}
 
@@ -92,7 +92,7 @@ main(int argc, char **argv)
 
 		sleep(wait);
 
-		/* loop until IGINT or SIGTERM is received */
+		/* loop until SIGINT or SIGTERM is received */
 	}
 }
 
