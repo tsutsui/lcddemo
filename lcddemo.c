@@ -25,6 +25,8 @@
 #include <unistd.h>
 
 #include <sys/ioctl.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #include <machine/lcd.h>
 
 #define LCD_DEVICE "/dev/lcd"
@@ -39,20 +41,40 @@ void sigcatch(int);
  */
 int lcd_fd;
 int wait = 5;	/* sec. */
+int ncpu;
+int physmem;
 
 int
 main(int argc, char **argv)
 {
 	char buf[80 + 1];
 	double la[3];
+	int mib[2];
+	size_t len;
 
+	/* get number of cpu(s) */
+	mib[0] = CTL_HW;
+	mib[1] = HW_NCPU;
+	len = sizeof(ncpu);
+	if (sysctl(mib, 2, &ncpu, &len, NULL, 0) == -1) {
+		perror("sysctl hw.ncpu failed");
+		exit(1);
+	}
+	mib[1] = HW_PHYSMEM;
+	len = sizeof(physmem);
+	if (sysctl(mib, 2, &physmem, &len, NULL, 0) == -1) {
+		perror("sysctl hw.physmem failed");
+		exit(1);
+	}
+
+	/* open LCD device */
 	lcd_fd = open(LCD_DEVICE, O_RDWR);
-
 	if (lcd_fd == -1) {
 		perror("Can not open " LCD_DEVICE);
 		exit(1);
 	}
 
+	/* signal handler */
 	if (signal(SIGINT, sigcatch) == SIG_ERR) {
 		perror("Can not set SIGINT handler");
 		exit(1);
@@ -82,9 +104,20 @@ main(int argc, char **argv)
 
 		sleep(wait);
 
+		/*	      0123456789012345678901234567890123456789 */
+		snprintf(buf, 41,
+			     "With %d CPU%c                             ",
+			     ncpu, ncpu == 1 ? ' ' : 's');
+		snprintf(&buf[40], 41,
+			     "  & %dMB memory                        ",
+			     physmem / 1024 / 1024);
+		write(lcd_fd, buf, 80);
+
+		sleep(wait);
+
 		getloadavg(la, 3);
 		/*	      0123456789012345678901234567890123456789 */
-		strlcpy(buf, "Load Average:                           ", 41);
+		strlcpy(buf, "Load Average                            ", 41);
 		snprintf(&buf[40], 41,
 			     "  %4.2f %4.2f %4.2f                        ",
 			     la[0], la[1], la[2]);
