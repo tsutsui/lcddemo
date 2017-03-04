@@ -15,7 +15,7 @@
  */
 
 /*
- * lcddemo - display some messages on LUNA-88K's front panel LCD
+ * lcddemo - display some messages on LUNA68K and LUNA-88K's front panel LCD
  */
 
 #include <fcntl.h>
@@ -98,8 +98,13 @@ main(int argc, char **argv)
 		sleep(wait);
 
 		/*	      0123456789012345678901234567890123456789 */
+#ifdef __NetBSD__
+		strlcpy(buf, "NetBSD/luna68k                          ", 41);
+		strlcat(buf, "    on LUNA                             ", 81);
+#else
 		strlcpy(buf, "OpenBSD/luna88k                         ", 41);
 		strlcat(buf, "    on LUNA-88K2                        ", 81);
+#endif
 		write(lcd_fd, buf, 80);
 
 		sleep(wait);
